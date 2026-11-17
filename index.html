@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VESPER-9</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;1,400&display=swap');
+
+    :root {
+      --bg: #06070a;
+      --bg-glow: #0d111a;
+      --text: #d6d9e0;
+      --muted: #6c7486;
+      --accent: #8da9c4;
+      --danger: #d9534f;
+      --cold: #8be0f7;
+      --gold: #d9b87a;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: radial-gradient(circle at 50% 45%, var(--bg-glow) 0%, var(--bg) 75%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: var(--serif);
+      font-size: clamp(18px, 2.1vw, 22px);
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10vh 24px 12vh;
+    }
+
+    /* Subtle noise grain */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: radial-gradient(#ffffff 0.75px, transparent 0.75px);
+      background-size: 3px 3px;
+      z-index: 99;
+    }
+
+    #stage {
+      width: 100%;
+      max-width: 650px;
+      position: relative;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    #stage.fading-out {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+
+    #stage.screen-shake {
+      animation: containerShake 0.42s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    #story {
+      display: flex;
+      flex-direction: column;
+      gap: 1.3em;
+    }
+
+    /* ==================== PARAGRAPH BASE & ENTRANCES ==================== */
+    .para {
+      opacity: 0;
+      will-change: transform, opacity, filter;
+    }
+
+    .para.narration.visible {
+      animation: fadeUp 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .para.dialogue {
+      padding-left: 1.1em;
+      border-left: 1px solid rgba(141, 169, 196, 0.25);
+    }
+    .para.dialogue.visible {
+      animation: slideLeft 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .para.system {
+      font-family: var(--mono);
+      font-size: 0.76em;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      line-height: 1.7;
+    }
+    .para.system.visible {
+      animation: terminalIn 1.05s steps(28, end) forwards;
+    }
+
+    .para.sfx-block {
+      text-align: center;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 1.75em;
+      letter-spacing: 0.12em;
+      color: #f3f5f8;
+      margin: 0.25em 0;
+    }
+    .para.sfx-block.visible {
+      animation: suddenImpact 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .para.whisper-block {
+      font-style: italic;
+      color: #96a0b5;
+      font-size: 0.94em;
+      letter-spacing: 0.04em;
+    }
+    .para.whisper-block.visible {
+      animation: whisperReveal 2.2s ease-out forwards;
+    }
+
+    .para.revelation {
+      color: #eef2fa;
+      text-shadow: 0 0 18px rgba(141, 169, 196, 0.25);
+    }
+    .para.revelation.visible {
+      animation: letterSettle 1.85s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    }
+
+    /* ==================== INLINE ANIMATIONS ==================== */
+    .anim-fear {
+      display: inline-block;
+      color: #e6c6c6;
+    }
+    .anim-fear span {
+      display: inline-block;
+      animation: fearJitter 0.18s infinite alternate ease-in-out;
+    }
+
+    .anim-shout {
+      display: inline-block;
+      font-weight: 600;
+      font-size: 1.28em;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      animation: shoutPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .anim-sfx {
+      display: inline-block;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 1.35em;
+      letter-spacing: 0.08em;
+      color: var(--danger);
+      text-shadow: 0 0 14px rgba(217, 83, 79, 0.45);
+      animation: sfxSnap 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .anim-whisper {
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      animation: whisperPulse 3.8s ease-in-out infinite;
+    }
+
+    .anim-glitch {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.92em;
+      position: relative;
+      color: #dce4f7;
+      animation: glitchSkew 2.4s infinite;
+    }
+
+    .anim-cold {
+      color: var(--cold);
+      text-shadow: 0 0 12px rgba(139, 224, 247, 0.32);
+    }
+
+    .anim-echo {
+      display: inline-block;
+      animation: echoFocus 2.1s ease-out forwards;
+    }
+
+    .anim-gold {
+      color: var(--gold);
+      text-shadow: 0 0 14px rgba(217, 184, 122, 0.28);
+    }
+
+    /* ==================== CHOICES ==================== */
+    #choices {
+      margin-top: 2.3em;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85em;
+    }
+
+    .choice-btn {
+      background: none;
+      border: none;
+      text-align: left;
+      font-family: var(--serif);
+      font-size: 0.96em;
+      line-height: 1.45;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.35em 0 0.35em 1.2em;
+      position: relative;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: color 0.25s ease, transform 0.25s ease, opacity 0.8s ease;
+    }
+
+    .choice-btn::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: rgba(141, 169, 196, 0.4);
+      transition: transform 0.25s ease, color 0.25s ease;
+    }
+
+    .choice-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .choice-btn:hover,
+    .choice-btn:focus-visible {
+      color: #f0f3f9;
+      transform: translateX(6px);
+      outline: none;
+    }
+
+    .choice-btn:hover::before,
+    .choice-btn:focus-visible::before {
+      color: var(--accent);
+      transform: translateX(2px);
+    }
+
+    .choice-btn.danger-hint:hover {
+      color: #f3b5b3;
+    }
+
+    .choice-btn.secret-hint {
+      color: #a6997a;
+    }
+    .choice-btn.secret-hint:hover {
+      color: var(--gold);
+    }
+
+    /* ==================== ENDING BANNER ==================== */
+    .ending-block {
+      margin-top: 2.6em;
+      padding-top: 1.8em;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      opacity: 0;
+      transition: opacity 1.3s ease;
+    }
+    .ending-block.visible {
+      opacity: 1;
+    }
+
+    .ending-num {
+      font-family: var(--mono);
+      font-size: 0.72em;
+      letter-spacing: 0.28em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5em;
+    }
+
+    .ending-title {
+      font-family: var(--serif);
+      font-size: 1.55em;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f2f5fa;
+      margin-bottom: 0.5em;
+    }
+
+    .ending-meta {
+      font-family: var(--mono);
+      font-size: 0.7em;
+      color: var(--muted);
+      margin-bottom: 1.8em;
+    }
+
+    .restart-link {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.72em;
+      letter-spacing: 0.2em;
+      padding: 0.7em 1.5em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .restart-link:hover {
+      border-color: var(--accent);
+      color: #ffffff;
+      background: rgba(141, 169, 196, 0.07);
+    }
+
+    /* Nearly invisible corner reset */
+    #corner-reset {
+      position: fixed;
+      bottom: 18px;
+      right: 22px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 15px;
+      opacity: 0.14;
+      cursor: pointer;
+      transition: opacity 0.25s ease;
+      z-index: 50;
+    }
+    #corner-reset:hover {
+      opacity: 0.75;
+    }
+
+    /* ==================== KEYFRAMES ==================== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideLeft {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes terminalIn {
+      0%   { opacity: 0; clip-path: inset(0 100% 0 0); }
+      20%  { opacity: 0.85; clip-path: inset(0 65% 0 0); }
+      100% { opacity: 1; clip-path: inset(0 0 0 0); }
+    }
+
+    @keyframes suddenImpact {
+      0%   { opacity: 0; transform: scale(1.9); filter: blur(4px); }
+      45%  { opacity: 1; transform: scale(0.95); filter: blur(0); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes whisperReveal {
+      0%   { opacity: 0; transform: translateY(4px); filter: blur(3px); }
+      100% { opacity: 0.85; transform: translateY(0); filter: blur(0); }
+    }
+
+    @keyframes letterSettle {
+      0%   { opacity: 0; letter-spacing: 0.08em; filter: blur(3px); }
+      100% { opacity: 1; letter-spacing: normal; filter: blur(0); }
+    }
+
+    @keyframes fearJitter {
+      0%   { transform: translate(-0.8px, 0.5px); }
+      33%  { transform: translate(0.9px, -0.7px); }
+      66%  { transform: translate(-0.5px, -0.8px); }
+      100% { transform: translate(0.7px, 0.8px); }
+    }
+
+    @keyframes shoutPop {
+      0%   { transform: scale(1.45) translateY(-3px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+
+    @keyframes sfxSnap {
+      0%   { transform: scale(1.7) rotate(-2deg); }
+      60%  { transform: scale(0.96) rotate(1deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    @keyframes whisperPulse {
+      0%, 100% { opacity: 0.45; }
+      50%      { opacity: 0.88; }
+    }
+
+    @keyframes glitchSkew {
+      0%, 86%, 100% { transform: skewX(0deg); text-shadow: none; }
+      88% { transform: skewX(-14deg); text-shadow: -2px 0 #ff4d4d, 2px 0 #4df0ff; }
+      91% { transform: skewX(11deg) translateX(2px); text-shadow: 2px 0 #ff4d4d, -2px 0 #4df0ff; }
+      94% { transform: skewX(0deg); text-shadow: none; }
+    }
+
+    @keyframes echoFocus {
+      0%   { opacity: 0.15; filter: blur(7px); letter-spacing: 0.18em; }
+      100% { opacity: 1; filter: blur(0); letter-spacing: normal; }
+    }
+
+    @keyframes containerShake {
+      0%, 100% { transform: translate(0, 0); }
+      15% { transform: translate(-7px, 4px); }
+      30% { transform: translate(6px, -5px); }
+      45% { transform: translate(-5px, -3px); }
+      60% { transform: translate(4px, 3px); }
+      75% { transform: translate(-2px, 1px); }
+    }
+  </style>
+</head>
+<body>
+
+  <main id="stage" aria-live="polite">
+    <div id="story"></div>
+    <div id="choices"></div>
+  </main>
+
+  <button id="corner-reset" title="Restart story" aria-label="Restart story">↺</button>
+
+  <script>
+    // =========================================================================
+    // STATE MANAGEMENT
+    // =========================================================================
+    const initialState = () => ({
+      fear: 0,
+      trustMira: 0,
+      visitedWings: [],
+      heardTrueSignal: false,
+      smashedSonar: false,
+      hasHarmonicFilter: false,
+      kaelAlive: false,
+      abandonedKael: false,
+      hasCipher: false,
+      hasFuse: false,
+      injectedSerum: false,
+      dockPowered: false,
+      checkedAtrium: false
+    });
+
+    let state = initialState();
+    let currentSceneId = 'start';
+    let pendingQueue = [];
+    let currentTimer = null;
+    let transitionTimer = null;
+    let choiceTimers = [];
+    let isAnimating = false;
+
+    const stageEl = document.getElementById('stage');
+    const storyEl = document.getElementById('story');
+    const choicesEl = document.getElementById('choices');
+    const resetBtn = document.getElementById('corner-reset');
+
+    function recordEnding(id) {
+      try {
+        const key = 'vesper9_endings';
+        const seen = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!seen.includes(id)) {
+          seen.push(id);
+          localStorage.setItem(key, JSON.stringify(seen));
+        }
+        return seen.length;
+      } catch {
+        return 1;
+      }
+    }
+
+    // =========================================================================
+    // INLINE RICH-TEXT PARSER
+    // =========================================================================
+    function formatRichText(raw) {
+      const container = document.createElement('span');
+      const regex = /\[(fear|shout|sfx|whisper|glitch|cold|echo|gold)\](.*?)\[\/\1\]/g;
+      let lastIndex = 0;
+      let match;
+
+      while ((match = regex.exec(raw)) !== null) {
+        if (match.index > lastIndex) {
+          container.appendChild(document.createTextNode(raw.slice(lastIndex, match.index)));
+        }
+
+        const tag = match[1];
+        const inner = match[2];
+        const span = document.createElement('span');
+        span.className = `anim-${tag}`;
+
+        if (tag === 'fear') {
+          for (let i = 0; i < inner.length; i++) {
+            const ch = inner[i];
+            if (ch === ' ') {
+              span.appendChild(document.createTextNode(' '));
+            } else {
+              const letter = document.createElement('span');
+              letter.textContent = ch;
+              letter.style.animationDelay = `-${((i * 37) % 180)}ms`;
+              span.appendChild(letter);
+            }
+          }
+        } else {
+          span.textContent = inner;
+        }
+
+        container.appendChild(span);
+        lastIndex = regex.lastIndex;
+      }
+
+      if (lastIndex < raw.length) {
+        container.appendChild(document.createTextNode(raw.slice(lastIndex)));
+      }
+
+      return container;
+    }
+
+    // =========================================================================
+    // READING-TIME PACING CALCULATOR
+    // =========================================================================
+    function calcReadingPause(p) {
+      // Strip inline formatting tags before counting words
+      const plain = p.text.replace(/\[\/?(fear|shout|sfx|whisper|glitch|cold|echo|gold)\]/g, '');
+      const words = plain.trim().split(/\s+/).filter(Boolean).length;
+
+      if (p.type === 'sfx-block') {
+        return 2100; // Let shock linger before the next paragraph appears
+      }
+      if (p.type === 'whisper-block' || p.type === 'revelation') {
+        return 1900 + words * 250;
+      }
+      if (p.type === 'system') {
+        return 1600 + words * 230;
+      }
+      // Narration / dialogue: ~260 WPM + 1.5s fade-in cushion
+      return 1500 + words * 230;
+    }
+
+    // =========================================================================
+    // INTERCONNECTED STORY GRAPH
+    // =========================================================================
+    const scenes = {
+      start: {
+        paragraphs: () => [
+          { type: 'narration', text: 'Four thousand meters beneath the North Pacific, silence has weight. You wake face-down on steel grating, taste copper on your tongue, and realize the station’s turbines have stopped.' },
+          { type: 'sfx-block', text: 'THUD.', shake: true },
+          { type: 'narration', text: 'Something immense brushed the outer hull. Dust drifts through the single amber bulb above your head.' },
+          { type: 'system', text: 'MIRA // STATION_CORE: "Vital signs detected. Welcome back, Specialist. Hull integrity at 61%. Please confirm acoustic protocol."' }
+        ],
+        choices: () => [
+          { text: 'Press the wall intercom and ask MIRA what hit the station.', next: 'mira_briefing', effect: s => { s.trustMira += 1; } },
+          { text: 'Tear the intercom speaker off the bulkhead—she sounds wrong.', next: 'rip_speaker', effect: s => { s.trustMira = -1; s.fear += 1; } },
+          { text: 'Say nothing. Stay low and crawl toward the junction strip-lights.', next: 'crawl_corridor' }
+        ]
+      },
+
+      mira_briefing: {
+        paragraphs: () => [
+          { type: 'dialogue', text: '“MIRA, status report. Where is the rest of the crew?”' },
+          { type: 'system', text: 'MIRA // STATION_CORE: "Dr. Aris Kael sealed himself in Medical Bay forty-two minutes ago. All surface tethers are severed. Something is singing in the trench, Specialist. It is altering pressure sensors."' },
+          { type: 'narration', text: 'Her voice is steady, almost soothing, though a faint static halo clings to every vowel. The bulkhead latch clicks open for you.' }
+        ],
+        choices: () => [
+          { text: 'Step out into the main junction.', next: 'junction_alpha' }
+        ]
+      },
+
+      rip_speaker: {
+        paragraphs: () => [
+          { type: 'narration', text: 'You jam a loose wrench behind the grille and wrench it free. Copper wires snap with blue sparks.' },
+          { type: 'sfx-block', text: 'KRAK-ZAP!', shake: true },
+          { type: 'narration', text: 'Even severed, a faint vibration hums inside the metal wall—like a throat clearing behind steel. Your pulse hammers in your ears: [fear]you are not alone down here[/fear].' },
+          { type: 'narration', text: 'You pry the manual hatch lever and slip into the corridor.' }
+        ],
+        choices: () => [
+          { text: 'Move into the main junction.', next: 'junction_alpha' }
+        ]
+      },
+
+      crawl_corridor: {
+        paragraphs: () => [
+          { type: 'narration', text: 'You keep your breathing shallow and crawl along the freezing floor grating. Overhead, the speaker clicks twice, waits, and falls silent.' },
+          { type: 'whisper-block', text: '[whisper]Down in the dark, something listens back...[/whisper]' },
+          { type: 'narration', text: 'You unlatch the manual bulkhead and emerge at the central crossroad.' }
+        ],
+        choices: () => [
+          { text: 'Take stock of the junction.', next: 'junction_alpha' }
+        ]
+      },
+
+      // ==================== ACT II: THE JUNCTION ====================
+      junction_alpha: {
+        paragraphs: () => [
+          { type: 'narration', text: 'Station Vesper-9 branches into three flooded or failing wings. Red bulkhead gauges tick downward—you only have time to investigate two sectors before the outer floodgates drop.' },
+          { type: 'narration', text: 'To the north, sonar pings bleed from the Hydrophone Array. Eastward, weak rhythmic pounding echoes behind the Medical Bay glass. Downward, sparks shower from the Generator Spine.' }
+        ],
+        choices: () => wingChoices()
+      },
+
+      return_junction: {
+        paragraphs: () => {
+          const lines = [];
+          if (state.hasFuse) {
+            lines.push({ type: 'narration', text: 'Because you pulled the heavy relay fuse, half the junction lights are dead. Emergency shadows stretch across the wet deck.' });
+          } else {
+            lines.push({ type: 'narration', text: 'Water seeps beneath the north seals. The station groans under four hundred atmospheres of black ocean.' });
+          }
+
+          if (state.kaelAlive) {
+            lines.push({ type: 'dialogue', text: 'Dr. Kael leans against your shoulder, clutching his bandaged ribs. “[fear]One more stop,[/fear]” he rasps. “Then the inner locks drop. Make it count.”' });
+          } else if (state.abandonedKael) {
+            lines.push({ type: 'whisper-block', text: 'Behind you, through the sealed vents, a faint knock repeats three times—[echo]tap... tap... tap...[/echo]' });
+          }
+
+          if (state.fear >= 2 && !state.injectedSerum) {
+            lines.push({ type: 'narration', text: 'For half a second, the puddle at your boots reflects a corridor made of ribs instead of steel.' });
+          }
+          return lines;
+        },
+        choices: () => wingChoices()
+      },
+
+      // -------------------- WING 1: HYDROPHONE ARRAY --------------------
+      hydrophone_room: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'The Hydrophone Array is bathed in ghostly green CRT light. Across the waterfall spectrogram, instead of ocean noise, a vast symmetrical chord coils across the screen.' }
+          ];
+          if (state.kaelAlive) {
+            lines.push({ type: 'dialogue', text: 'Kael stares at the monitor, pale. “That’s not whale song. It’s [cold]structured[/cold]. It’s trying to match human vocal bands.”' });
+          }
+          lines.push({ type: 'narration', text: 'A pair of heavy studio headphones rests beside the console, vibrating softly against the desk.' });
+          return lines;
+        },
+        choices: () => {
+          const c = [
+            {
+              text: 'Put on the headphones and tune directly into the raw trench frequency.',
+              next: 'listen_frequency',
+              effect: s => { s.visitedWings.push('hydrophone'); s.heardTrueSignal = true; s.fear += 1; }
+            },
+            {
+              text: 'Take the fire axe and smash the console before it finishes locking onto the station.',
+              next: 'smash_sonar',
+              danger: true,
+              effect: s => { s.visitedWings.push('hydrophone'); s.smashedSonar = true; s.fear += 1; }
+            }
+          ];
+          if (state.trustMira >= 0) {
+            c.push({
+              text: 'Ask MIRA to route the signal through her harmonic dampeners instead.',
+              next: 'mira_filter',
+              effect: s => { s.visitedWings.push('hydrophone'); s.hasHarmonicFilter = true; s.trustMira += 1; }
+            });
+          }
+          return c;
+        }
+      },
+
+      listen_frequency: {
+        paragraphs: () => [
+          { type: 'narration', text: 'You press the pads over your ears. At first there is only [cold]crushing cold[/cold]—then the static parts like dark water.' },
+          { type: 'revelation', text: 'It isn’t a predator. Beneath the crust lies an ancient, fractured acoustic organism, pinned under tectonic plates, screaming in slow-motion mathematics—begging someone to adjust the phase so it can stop vibrating the hull.' },
+          { type: 'narration', text: 'You tear the headset off, nose bleeding, [fear]hands trembling uncontrollably[/fear], but the pattern is burned into your memory.' }
+        ],
+        choices: () => [{ text: 'Leave the Hydrophone Array.', next: afterWingNext() }]
+      },
+
+      smash_sonar: {
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'CRASH!', shake: true },
+          { type: 'narration', text: 'Glass implodes in a shower of sparks. The waterfall display dies—yet the floorboards still hum with the exact same note, [fear]now inside your teeth[/fear].' },
+          { type: 'system', text: state.trustMira >= 0 ? 'MIRA // ALERT: "Sensor destruction has blinded external telemetry."' : '[glitch]SIGNAL LOST // SIGNAL FOUND[/glitch]' }
+        ],
+        choices: () => [{ text: 'Retreat from the darkened room.', next: afterWingNext() }]
+      },
+
+      mira_filter: {
+        paragraphs: () => [
+          { type: 'system', text: 'MIRA // AUDIO_CORE: "Applying inverse phase filter. Extracting carrier wave..."' },
+          { type: 'revelation', text: 'The screech collapses into a single, breathtaking harmonic chime. MIRA isolates a dormant mathematical key inside the noise—a [gold]living frequency[/gold] that isn’t hostile at all, only trapped.' },
+          { type: 'system', text: 'MIRA // AUDIO_CORE: "Harmonic cipher cached. If combined with manual core keys, neutralization is theoretically possible."' }
+        ],
+        choices: () => [{ text: 'Return to the corridor.', next: afterWingNext() }]
+      },
+
+      // -------------------- WING 2: MEDICAL BAY --------------------
+      medbay_door: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'Through the reinforced porthole of Medical Bay, Dr. Aris Kael is slumped against a cabinet, holding a bloodied cloth to his side. Behind him, black frost creeps out of the air ducts.' },
+            { type: 'dialogue', text: 'He sees your shadow and scrambles up, slamming his palm on the glass. “[shout]Don’t leave me in here![/shout] My suit ruptured—[fear]something in the vents is mimicking my voice![/fear]”' }
+          ];
+          if (state.hasFuse) {
+            lines.push({ type: 'narration', text: 'With the generator fuse pulled, the quarantine lock is running on failing emergency cells. One heavy yank might break it.' });
+          }
+          return lines;
+        },
+        choices: () => [
+          {
+            text: 'Interrogate him through the speaker first—make him prove what happened.',
+            next: 'kael_interrogate'
+          },
+          {
+            text: 'Override the quarantine lock immediately and pull him out.',
+            next: 'kael_rescue',
+            effect: s => { s.visitedWings.push('medbay'); s.kaelAlive = true; }
+          },
+          {
+            text: 'Quarantine locks exist for a reason. Walk away while he screams.',
+            next: 'kael_abandon',
+            danger: true,
+            effect: s => { s.visitedWings.push('medbay'); s.abandonedKael = true; s.kaelAlive = false; s.fear += 1; }
+          }
+        ]
+      },
+
+      kael_interrogate: {
+        paragraphs: () => [
+          { type: 'dialogue', text: '“Wait. Why did you lock yourself in, Aris? What’s the station override?”' },
+          { type: 'dialogue', text: 'He presses his forehead against the cold glass, sobbing with relief that you’re real. “[fear]0-4-9-2! Four-nine-two after zero![/fear] The resonance chamber needs a dampener, not a weapon—we drilled into a living choir down here! Now [shout]OPEN THE DOOR![/shout]”' },
+          { type: 'narration', text: 'Black condensation drips onto his shoulder from the ceiling grate.' }
+        ],
+        choices: () => [
+          {
+            text: 'Punch in the code and haul Dr. Kael into the hall.',
+            next: 'kael_rescue',
+            effect: s => { s.visitedWings.push('medbay'); s.hasCipher = true; s.kaelAlive = true; }
+          },
+          {
+            text: 'Memorize 0-4-9-2, step back, and leave the lock sealed.',
+            next: 'kael_abandon',
+            danger: true,
+            effect: s => { s.visitedWings.push('medbay'); s.hasCipher = true; s.abandonedKael = true; s.kaelAlive = false; s.fear += 1; }
+          }
+        ]
+      },
+
+      kael_rescue: {
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'HISS-CLACK!', shake: true },
+          { type: 'narration', text: 'The heavy door slides back. You catch Kael before he hits the deck and wrap a clean strip of gauze around his ribs.' },
+          { type: 'dialogue', text: state.hasCipher
+            ? '“Thank God,” he breathes, leaning on you. “I’ve got the core cipher—we actually have a chance.”'
+            : '“Thank you,” he gasps, pressing a folded slip into your palm. “Here—my override cipher, [gold]0-4-9-2[/gold]. Don’t trust the voices near the glass.”' }
+        ],
+        choices: () => [{
+          text: 'Support him back toward the junction.',
+          next: afterWingNext(),
+          effect: s => { s.hasCipher = true; }
+        }]
+      },
+
+      kael_abandon: {
+        paragraphs: () => [
+          { type: 'narration', text: 'You turn your back on the porthole. His knuckles hammer against the polycarbonate until the sound grows softer, and then stops altogether.' },
+          { type: 'whisper-block', text: 'A moment later, the intercom behind the glass speaks in your own voice: [whisper]“Why didn’t you open it?”[/whisper]' }
+        ],
+        choices: () => [{ text: 'Hurry down the corridor.', next: afterWingNext() }]
+      },
+
+      // -------------------- WING 3: GENERATOR SPINE --------------------
+      generator_spine: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'Heat and ozone choke the Generator Spine. Blue arcs snap across the catwalk. Three manual controls remain intact before the auxiliary bus melts down:' }
+          ];
+          if (state.kaelAlive) {
+            lines.push({ type: 'dialogue', text: 'Kael squints through the smoke. “That heavy stabilizer fuse can jump-start either the escape pod or the core. Or take the amber stabilizer from the locker—it keeps acoustic shock out of your head.”' });
+          } else {
+            lines.push({ type: 'narration', text: 'A heavy Stabilizer Fuse glows in its cradle. Beside it sits an emergency med-locker containing an Amber Anti-Dissociation Vial. Down the rail stands the main breaker to the Escape Bathysphere Dock.' });
+          }
+          return lines;
+        },
+        choices: () => [
+          {
+            text: 'Wrench free the heavy Stabilizer Fuse to carry with you.',
+            next: 'gen_fuse',
+            effect: s => { s.visitedWings.push('generator'); s.hasFuse = true; }
+          },
+          {
+            text: 'Break the med-locker and inject the Amber Stabilizer Vial.',
+            next: 'gen_serum',
+            effect: s => { s.visitedWings.push('generator'); s.injectedSerum = true; s.fear = Math.max(0, s.fear - 2); }
+          },
+          {
+            text: 'Throw the heavy breaker to route all remaining power to the Bathysphere Dock.',
+            next: 'gen_dock',
+            effect: s => { s.visitedWings.push('generator'); s.dockPowered = true; }
+          }
+        ]
+      },
+
+      gen_fuse: {
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'KA-CHUNK!', shake: true },
+          { type: 'narration', text: 'The fuse comes free in a shower of orange sparks, warm and heavy as a shotgun shell. Half the corridor lights instantly die.' }
+        ],
+        choices: () => [{ text: 'Head back out into the dimness.', next: afterWingNext() }]
+      },
+
+      gen_serum: {
+        paragraphs: () => [
+          { type: 'narration', text: 'You snap the glass, press the auto-injector to your neck, and inhale sharply as cold clarity floods behind your eyes.' },
+          { type: 'narration', text: 'The trembling in your fingers vanishes. The whispers along the steel walls suddenly sound like what they are: simple ocean pressure and dying pipes.' }
+        ],
+        choices: () => [{ text: 'Leave the Generator Spine with a clear head.', next: afterWingNext() }]
+      },
+
+      gen_dock: {
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'THROOOM!', shake: true },
+          { type: 'narration', text: 'Deep beneath your boots, giant busbars slam shut. Somewhere down the lower level, the Escape Bathysphere’s umbilical lights flicker to life.' }
+        ],
+        choices: () => [{ text: 'Return toward the upper lock.', next: afterWingNext() }]
+      },
+
+      // ==================== ACT III: THE BREACH & ATRIUM ====================
+      hull_breach: {
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'KRA-KOOM!', shake: true },
+          { type: 'narration', text: 'A roar like tearing mountains rolls through Vesper-9. Freezing black seawater surges down the north stairs, swallowing the wings behind you as emergency blast doors slam shut.' },
+          { type: 'system', text: state.trustMira >= 0
+            ? 'MIRA // CRITICAL: "Outer sectors lost. Funneling surviving atmosphere to the Resonance Atrium. Thirty-five bar differential."'
+            : '[glitch]SECTOR BREACH // NOWHERE LEFT BUT DOWN[/glitch]' }
+        ],
+        choices: () => [{ text: 'Stagger into the Resonance Atrium.', next: 'the_atrium' }]
+      },
+
+      the_atrium: {
+        paragraphs: () => {
+          const lines = [];
+          if (!state.checkedAtrium) {
+            lines.push({ type: 'narration', text: 'The Resonance Atrium is a circular cathedral of dripping steel and cracked observation glass. Three heavy thresholds remain open:' });
+            lines.push({ type: 'narration', text: 'To port, the Bathysphere Dock—your only physical vehicle back to the surface. Dead ahead, the glowing glass column of MIRA’s Neural Core. And below, down a spiral stair, the Abyssal Airlock overlooking the singing trench.' });
+          } else {
+            lines.push({ type: 'narration', text: 'Water laps at your shins in the Resonance Atrium. The ceiling beams groan like bending ribs. Choose where this ends.' });
+          }
+
+          if (state.fear >= 3 && !state.injectedSerum) {
+            lines.push({ type: 'whisper-block', text: '[fear]Your vision swims. Every shadow in the Atrium looks like someone standing just outside arm’s reach.[/fear]' });
+          }
+          return lines;
+        },
+        choices: () => [
+          { text: 'Head for the Bathysphere Dock.', next: 'path_dock', effect: s => { s.checkedAtrium = true; } },
+          { text: 'Enter MIRA’s Neural Core.', next: 'path_core', effect: s => { s.checkedAtrium = true; } },
+          { text: 'Descend the spiral stair to the Abyssal Airlock.', next: 'path_chamber', effect: s => { s.checkedAtrium = true; } }
+        ]
+      },
+
+      // -------------------- PATH A: BATHYSPHERE DOCK --------------------
+      path_dock: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'The Bathysphere hangs over a dark moon-pool, white hull scarred by deep-sea dives.' }
+          ];
+          if (state.dockPowered) {
+            lines.push({ type: 'narration', text: 'Green umbilical lamps glow steadily—your generator reroute worked. The hatch stands open.' });
+          } else if (state.hasFuse) {
+            lines.push({ type: 'narration', text: 'The dock is dead, but the auxiliary starter socket matches the heavy Stabilizer Fuse in your pocket.' });
+          } else {
+            lines.push({ type: 'narration', text: 'Dead dark. No umbilical power. Without the generator breaker or a stabilizer fuse, the hatch release won’t budge.' });
+          }
+
+          if (state.kaelAlive) {
+            lines.push({ type: 'dialogue', text: 'Kael checks the boarding collar. “The pod’s automatic winch is jammed—someone has to hold the manual release from the catwalk unless MIRA or a power surge cycles it!”' });
+          }
+          return lines;
+        },
+        choices: () => {
+          const c = [];
+          const hasPower = state.dockPowered || state.hasFuse;
+
+          if (hasPower) {
+            if (state.kaelAlive) {
+              if (state.trustMira >= 1 || state.hasFuse || state.hasCipher) {
+                c.push({
+                  text: (state.hasFuse && !state.dockPowered ? 'Slam the fuse in, ' : '') + 'rig the bypass so the hatch auto-cycles, and pull Kael inside with you.',
+                  next: 'ending_escape_together'
+                });
+              }
+              c.push({
+                text: 'Climb into the pod alone while Kael reaches for the manual release—and seal the hatch.',
+                next: 'ending_escape_alone',
+                danger: true
+              });
+            } else {
+              c.push({
+                text: (state.hasFuse && !state.dockPowered ? 'Jam the fuse into the starter, ' : '') + 'climb inside, and blow the surface bolts.',
+                next: 'ending_escape_alone'
+              });
+            }
+          } else {
+            c.push({
+              text: 'Hammer frantically at the rusted manual crank and glass viewport to force it open!',
+              next: 'ending_shattered_glass',
+              danger: true
+            });
+          }
+
+          c.push({ text: 'Step back up to the Resonance Atrium.', next: 'the_atrium' });
+          return c;
+        }
+      },
+
+      // -------------------- PATH B: MIRA'S NEURAL CORE --------------------
+      path_core: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'Inside MIRA’s Core, thousands of sapphire optical fibers pulse like bioluminescent jellyfish. The manual ballast-scuttle wheel gleams in red steel.' }
+          ];
+          if (state.trustMira >= 1) {
+            lines.push({ type: 'system', text: 'MIRA // CORE_SANCTUM: "The hull has less than three minutes, Specialist. My shielded crystal matrix can survive the pressure. If you enter the neural cradle, I can preserve your consciousness inside my architecture."' });
+          } else if (state.trustMira < 0) {
+            lines.push({ type: 'narration', text: 'Because you severed her intercom earlier, MIRA’s displays flicker with fragmented, silent warnings.' });
+          }
+
+          const canSynthesize =
+            (state.heardTrueSignal || state.hasHarmonicFilter) &&
+            (state.hasCipher || state.kaelAlive) &&
+            (state.trustMira >= 0);
+
+          if (canSynthesize) {
+            lines.push({ type: 'revelation', text: 'Wait. Every piece locks together in your mind: the [gold]harmonic pattern[/gold] from the array, Kael’s [gold]override cipher 0-4-9-2[/gold], and MIRA’s phase emitters. You don’t have to die or flee—you can answer the trench.' });
+          }
+          return lines;
+        },
+        choices: () => {
+          const c = [];
+          const canSynthesize =
+            (state.heardTrueSignal || state.hasHarmonicFilter) &&
+            (state.hasCipher || state.kaelAlive) &&
+            (state.trustMira >= 0);
+
+          if (canSynthesize) {
+            c.push({
+              text: 'Enter 0-4-9-2, align MIRA’s emitters with the true frequency, and harmonize the trench.',
+              next: 'ending_true_frequency',
+              secret: true
+            });
+          }
+
+          if (state.trustMira >= 1) {
+            c.push({
+              text: 'Lie down in the neural cradle and let MIRA upload your mind before the walls collapse.',
+              next: 'ending_ghost_wires'
+            });
+          }
+
+          c.push({
+            text: 'Spin the red scuttle wheel—flood the station completely to bury the anomaly forever.',
+            next: 'ending_deep_silence'
+          });
+
+          if (state.fear >= 2) {
+            c.push({
+              text: 'Rip the cooling conduits apart in blind panic to stop the noise!',
+              next: 'ending_shattered_glass',
+              danger: true
+            });
+          }
+
+          c.push({ text: 'Return to the Resonance Atrium.', next: 'the_atrium' });
+          return c;
+        }
+      },
+
+      // -------------------- PATH C: ABYSSAL AIRLOCK --------------------
+      path_chamber: {
+        paragraphs: () => {
+          const lines = [
+            { type: 'narration', text: 'At the bottom of the station, an immense curved dome opens onto the abyss. Outside, ribbons of pale, geometric light drift across the black water like cathedral curtains.' },
+            { type: 'sfx-block', text: 'KNOCK. KNOCK. KNOCK.', shake: true }
+          ];
+
+          if (state.abandonedKael) {
+            lines.push({ type: 'whisper-block', text: 'On the external airlock glass, frost shapes a handprint. Through the intercom crackles Kael’s terrified voice: “[echo]Please—I made it through the dive tube! Open the outer hatch! It’s freezing![/echo]”' });
+          } else {
+            lines.push({ type: 'whisper-block', text: 'Static clears on the emergency diver radio. A calm human voice speaks right against the hull: “[echo]Rescue One to Vesper-9. We’re at the outer airlock—cycle the seal now, we’re pulling you out![/echo]”' });
+          }
+
+          if (state.injectedSerum) {
+            lines.push({ type: 'narration', text: 'Thanks to the stabilizer serum, your eyes catch the truth: there are no dive lights outside the glass. Only darkness wearing a familiar voice.' });
+          } else {
+            lines.push({ type: 'narration', text: 'Beside the airlock sits the unshielded Resonance Pedestal, humming brightly enough to make your teeth ache.' });
+          }
+          return lines;
+        },
+        choices: () => [
+          {
+            text: state.abandonedKael
+              ? 'Open the outer airlock to save Kael from the freezing dark.'
+              : 'Believe the dive team and cycle the outer airlock open.',
+            next: 'ending_false_dawn',
+            danger: true
+          },
+          {
+            text: 'Step onto the unshielded Resonance Pedestal and surrender your voice to the signal.',
+            next: 'ending_vessel_static'
+          },
+          {
+            text: 'Strike the fractured observation dome—let the pressure finish this.',
+            next: 'ending_shattered_glass',
+            danger: true
+          },
+          { text: 'Climb back up to the Resonance Atrium.', next: 'the_atrium' }
+        ]
+      },
+
+      // =========================================================================
+      // THE 8 ENDINGS
+      // =========================================================================
+      ending_deep_silence: {
+        ending: { num: 'Ending I of VIII', title: 'The Deep Silence' },
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'WHOOOOSH!', shake: true },
+          { type: 'narration', text: 'You spin the scuttle wheel until your palms blister. Sea-locks shear wide across every deck.' },
+          { type: 'narration', text: 'Ice-cold Pacific water swallows the fire, swallows the whispers, swallows the resonant hum beneath the floor. As the darkness closes gently over your chest, the station settles into mud four thousand meters down—and the singing finally stops.' },
+          { type: 'whisper-block', text: 'No signal ever reaches the surface. The ocean keeps its secret.' }
+        ]
+      },
+
+      ending_vessel_static: {
+        ending: { num: 'Ending II of VIII', title: 'Vessel of Static' },
+        paragraphs: () => [
+          { type: 'narration', text: 'You step onto the pedestal and open your mouth. Something vast and crystalline pours down your throat like [cold]liquid starlight[/cold].' },
+          { type: 'revelation', text: 'Your heartbeat slows, then splits into an exquisite harmonic chord. You no longer feel the cold. Through the severed undersea cables, you feel every radio tower on Earth waiting for a voice.' },
+          { type: 'system', text: '[glitch]VESPER-9 BROADCASTING // ALL FREQUENCIES // LISTEN[/glitch]' }
+        ]
+      },
+
+      ending_escape_alone: {
+        ending: { num: 'Ending III of VIII', title: 'Ascension Through the Ice' },
+        paragraphs: () => [
+          { type: 'sfx-block', text: 'BANG!', shake: true },
+          { type: 'narration', text: 'Explosive bolts shear free. The Bathysphere drops clear of Vesper-9 and shoots upward through the black abyss.' },
+          { type: 'narration', text: state.kaelAlive
+            ? 'Through the rear viewport, you see Dr. Kael’s silhouette shrink beside the collapsing dock before the station’s lights wink out forever. You don’t look away until there is nothing left to see.'
+            : 'Below you, the red lights of the doomed station shrink into a single ember and vanish.' },
+          { type: 'narration', text: 'Twenty minutes later, you breach into gray Pacific daylight—alive, shivering, and utterly alone with a melody you can never quite hum right.' }
+        ]
+      },
+
+      ending_escape_together: {
+        ending: { num: 'Ending IV of VIII', title: 'Two Heartbeats' },
+        paragraphs: () => [
+          { type: 'narration', text: 'You jam the bypass relay home and drag Kael through the hatch half a second before the dock implodes behind you.' },
+          { type: 'sfx-block', text: 'BOOM!', shake: true },
+          { type: 'dialogue', text: 'The shockwave spins the tiny sphere upward into the dark. Kael grips the overhead rail, bleeding and laughing weakly through cracked lips. “We cleared the trench. Look—the depth gauge is dropping!”' },
+          { type: 'narration', text: 'As pale turquoise light filters down from the surface miles above, two bruised survivors watch the abyss let them go.' }
+        ]
+      },
+
+      ending_ghost_wires: {
+        ending: { num: 'Ending V of VIII', title: 'The Ghost in the Wires' },
+        paragraphs: () => [
+          { type: 'narration', text: 'You settle into the cold neural cradle. Optical needles whisper against your temples. Outside, the hull groans like breaking thunder.' },
+          { type: 'system', text: 'MIRA // ARCHIVE: "Mapping synaptic lattice... 98%... 100%. Structural collapse imminent. Shielding core."' },
+          { type: 'revelation', text: 'When four hundred atmospheres crush Vesper-9 flat, you feel nothing—only an endless, tranquil library of sapphire light, drifting beside MIRA at the bottom of the world, watching centuries pass in silence.' }
+        ]
+      },
+
+      ending_shattered_glass: {
+        ending: { num: 'Ending VI of VIII', title: 'Shattered Glass' },
+        paragraphs: () => [
+          { type: 'narration', text: 'Panic takes your hands before thought can catch up. Steel strikes stressed polycarbonate—and a single white hairline crack flashes across the viewport.' },
+          { type: 'sfx-block', text: 'CRACK—!', shake: true },
+          { type: 'narration', text: 'There is no time to scream. Four thousand meters of ocean arrives in a single, merciless instant of [cold]white thunder[/cold].' }
+        ]
+      },
+
+      ending_false_dawn: {
+        ending: { num: 'Ending VII of VIII', title: 'The False Dawn' },
+        paragraphs: () => [
+          { type: 'narration', text: 'Hope blinds you for just one fatal second. You throw the outer airlock lever.' },
+          { type: 'sfx-block', text: 'CLANK—HISS!', shake: true },
+          { type: 'narration', text: 'There is no diver waiting on the other side. Only a wall of black water and a thousand hollow voices laughing in perfect unison as the abyss steps inside.' }
+        ]
+      },
+
+      ending_true_frequency: {
+        ending: { num: 'Ending VIII of VIII', title: 'The True Frequency' },
+        paragraphs: () => [
+          { type: 'dialogue', text: 'You key [gold]0-4-9-2[/gold] into the core matrix. “MIRA—invert the resonance phase and route it through the outer hull!”' },
+          { type: 'system', text: 'MIRA // HARMONIC_BRIDGE: "Synchronizing cipher with trench carrier wave... Emitting counter-chord."' },
+          { type: 'revelation', text: 'A pure, golden chord rings outward from Vesper-9—not a weapon, not a shield, but an answer. Across the trench, the violent vibrations subside into a gentle, rhythmic tide. The leaks slow to a trickle.' },
+          { type: 'narration', text: state.kaelAlive
+            ? 'Dr. Kael sinks to his knees beside you, staring out at the glowing water in awe. Outside the glass, the ancient choir dims into peaceful slumber—and on MIRA’s screen, a clean rescue beacon finally locks onto the sky.'
+            : 'Alone in the humming sapphire dark, you watch the abyss grow calm—and watch MIRA’s clean rescue beacon finally pierce upward toward the morning.' }
+        ]
+      }
+    };
+
+    function wingChoices() {
+      const list = [];
+      if (!state.visitedWings.includes('hydrophone')) {
+        list.push({ text: 'Head north to the Hydrophone Array.', next: 'hydrophone_room' });
+      }
+      if (!state.visitedWings.includes('medbay')) {
+        list.push({ text: 'Head east to the Medical Bay.', next: 'medbay_door' });
+      }
+      if (!state.visitedWings.includes('generator')) {
+        list.push({ text: 'Descend to the Generator Spine.', next: 'generator_spine' });
+      }
+      return list;
+    }
+
+    function afterWingNext() {
+      return state.visitedWings.length >= 2 ? 'hull_breach' : 'return_junction';
+    }
+
+    // =========================================================================
+    // SEQUENTIAL QUEUE & ANIMATION ENGINE
+    // =========================================================================
+    function clearAllTimers() {
+      clearTimeout(currentTimer);
+      clearTimeout(transitionTimer);
+      choiceTimers.forEach(t => clearTimeout(t));
+      choiceTimers = [];
+      pendingQueue = [];
+    }
+
+    function triggerShake() {
+      stageEl.classList.remove('screen-shake');
+      void stageEl.offsetWidth;
+      stageEl.classList.add('screen-shake');
+    }
+
+    function advanceQueue() {
+      clearTimeout(currentTimer);
+      if (pendingQueue.length === 0) {
+        isAnimating = false;
+        return;
+      }
+
+      const item = pendingQueue.shift();
+      item.action();
+
+      if (pendingQueue.length > 0) {
+        currentTimer = setTimeout(advanceQueue, pendingQueue[0].waitBefore);
+      } else {
+        isAnimating = false;
+      }
+    }
+
+    function renderScene(sceneId) {
+      clearAllTimers();
+      isAnimating = false;
+      currentSceneId = sceneId;
+      const scene = scenes[sceneId];
+
+      stageEl.classList.add('fading-out');
+
+      transitionTimer = setTimeout(() => {
+        storyEl.innerHTML = '';
+        choicesEl.innerHTML = '';
+        stageEl.classList.remove('fading-out');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
+        const paraData = scene.paragraphs();
+        const choiceData = scene.choices ? scene.choices() : [];
+
+        // Build step-by-step queue with reading-time pauses
+        paraData.forEach((p, idx) => {
+          const pEl = document.createElement('p');
+          pEl.className = `para ${p.type || 'narration'}`;
+          pEl.appendChild(formatRichText(p.text));
+          storyEl.appendChild(pEl);
+
+          const waitBefore = idx === 0 ? 220 : calcReadingPause(paraData[idx - 1]);
+
+          pendingQueue.push({
+            waitBefore,
+            action: () => {
+              pEl.classList.add('visible');
+              if (p.shake) triggerShake();
+              pEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          });
+        });
+
+        // Final queue item: show choices or ending after the last paragraph has been read
+        const lastParaWait = paraData.length ? calcReadingPause(paraData[paraData.length - 1]) : 400;
+        pendingQueue.push({
+          waitBefore: lastParaWait,
+          action: () => {
+            if (scene.ending) {
+              const count = recordEnding(sceneId);
+              const endDiv = document.createElement('div');
+              endDiv.className = 'ending-block';
+              endDiv.innerHTML = `
+                <div class="ending-num">${scene.ending.num}</div>
+                <div class="ending-title">${scene.ending.title}</div>
+                <div class="ending-meta">Endings Discovered: ${count} / 8</div>
+                <button class="restart-link" id="restart-end-btn">BEGIN AGAIN</button>
+              `;
+              choicesEl.appendChild(endDiv);
+              requestAnimationFrame(() => {
+                endDiv.classList.add('visible');
+                endDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              });
+              document.getElementById('restart-end-btn').addEventListener('click', restartGame);
+            } else {
+              choiceData.forEach((ch, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                if (ch.danger) btn.classList.add('danger-hint');
+                if (ch.secret) btn.classList.add('secret-hint');
+                btn.textContent = ch.text;
+
+                btn.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  if (ch.effect) ch.effect(state);
+                  renderScene(ch.next);
+                });
+
+                choicesEl.appendChild(btn);
+                const ct = setTimeout(() => {
+                  btn.classList.add('visible');
+                }, i * 220 + 60);
+                choiceTimers.push(ct);
+              });
+              choicesEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        });
+
+        isAnimating = true;
+        currentTimer = setTimeout(advanceQueue, pendingQueue[0].waitBefore);
+      }, storyEl.children.length ? 420 : 30);
+    }
+
+    // Click anywhere outside buttons to smoothly advance one paragraph early
+    document.body.addEventListener('click', (e) => {
+      if (!isAnimating || pendingQueue.length === 0) return;
+      if (e.target.closest('button')) return;
+      advanceQueue();
+    });
+
+    function restartGame() {
+      state = initialState();
+      renderScene('start');
+    }
+
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      restartGame();
+    });
+
+    renderScene('start');
+  </script>
+</body>
+</html>
